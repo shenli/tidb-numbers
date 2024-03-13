@@ -50,3 +50,22 @@ TiDB:
 
 Aurora MySQL:
 * db.r5.8xlarge
+
+## Columnar Storage Engine (TiFlash)
+### Replication Lag
+With TiKV and TiFlash, what does the replication lag look like?
+Within sub-second if write load is not high, seconds to minutes for high write workload.
+
+For example: with 2000 write TPS, in-place update random records in a huge table, the P99 lag is < 600ms.
+
+### Query Performance
+The comfortable zone of a single TiFlash node is tens of QPS.
+For example: a TiFlash node with 1TB data, <50 qps would be OK.
+
+If there are proper indexes with good selectivity, the QPS can be much higher. In this case, planner can leverage TiKV to do more efficient filtering with indexes.
+
+## Capacity Planning
+### Storage
+* Single TiKV instance servers 4TB data.
+* Keep the TiKV storage utilization under 80%.
+* Data compressing rate of TiKV is 3~6.
