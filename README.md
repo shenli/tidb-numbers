@@ -26,8 +26,22 @@ For Physical import **200GiB/h per Lightning instance**, logical import **50GiB/
     - If there is any unique index (uniqueness checking costs extra time)
 * Number of Lightning instance (parallel ingestion)
 
-## DDL (Schema Change)
-### Indexing
+## Schema Change (DDL)
+### The Speed of DDL
+
+| DDL Operation Type                                                | Estimated Time                                                          |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Change Column Type   (Incompactiable Change, such as Int to Text) | Depends on the amount of data, system load, and DDL parameter settings. |
+| Change Column Type (Compatiable Change, such as Int to BigInt)    | <1s                                                                     |
+| Add Index                                                         | Depends on the amount of data, system load, and DDL parameter settings. |
+| Add Column                                                        | <1s                                                                     |
+| Drop Column                                                       | <1s                                                                     |
+| Create Table                                                      | <1s                                                                     |
+| Drop Table                                                        | <1s                                                                     |
+| Truncate Table                                                    | <1s                                                                     |
+
+
+### Indexing Speed
 
 #### Factors affecting indexing speed
 
@@ -39,17 +53,31 @@ For Physical import **200GiB/h per Lightning instance**, logical import **50GiB/
 * Ideal cluster or busy cluster
 
 
-Here is a benchmark comparison with Aurora MySQL of reference:
-
-Note: there are improvements in v7.5/v8.0, Indexing should be 30% faster compared with v6.5.
-
+#### Benchmark
 TiDB: 
 * v6.5
 * TiDB Server:  (16c + 32G) * 2 
 * TiKV Server:  (16c + 64G + 1T) * 9
 
-Aurora MySQL:
-* db.r5.8xlarge
+Table Definition:
+```
+CREATE TABLE `sbtest1` (
+`id` int(20) NOT NULL,
+`k` int(11) NOT NULL DEFAULT '0',
+`c` char(120) NOT NULL DEFAULT '',
+`pad` char(60) NOT NULL DEFAULT '',
+PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+```
+
+DDL: `Alter table sbtest1 add key K_1(k);`
+
+| **# of Record** | **Data Volume (GB)** | **Index Speed (time spend)** | **Indexing Speed  (million rows per sec)** |
+|---|---|:-:|:-:|
+| **100 million** | 20 | 1 min 18 sec | 1.28 |
+| **1 billion** | 195 | 13 min 42 sec | 1.22 |
+| **5 billion** | 918 | 1 h 5 min 5 sec | 1.28 |
+
 
 ## Columnar Storage Engine (TiFlash)
 ### Replication Lag
